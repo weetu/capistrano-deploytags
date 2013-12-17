@@ -32,6 +32,10 @@ module Capistrano
       exists?(:git_remote) ? git_remote : `git remote`.strip.split(/\n/).first
     end
 
+    def has_matching_tag?(pattern, rev='HEAD')
+      !`git describe --exact-match --match '#{pattern}' #{rev} 2>/dev/null`.strip.empty?
+    end
+
     def self.load_into(configuration)
       configuration.load do
         before 'deploy', 'git:prepare_tree'
@@ -53,6 +57,14 @@ module Capistrano
               raise 'Dirty git tree'
             end
 
+            required_tag_pattern = fetch(:require_tag)
+            unless required_tag_pattern.nil?
+              unless cdt.has_matching_tag?(required_tag_pattern, 'HEAD')
+                logger.log Capistrano::Logger::IMPORTANT, "A tag matching '#{required_tag_pattern}' was not found in HEAD. Refusing to deploy."
+                raise 'No required tag found'
+              end
+            end
+
             cdt.safe_run 'git', 'checkout', branch
             logger.log Capistrano::Logger::IMPORTANT, "Pulling from #{branch}"
             cdt.safe_run 'git', 'pull', cdt.remote, branch if cdt.has_remote?
@@ -72,7 +84,6 @@ module Capistrano
             cdt.safe_run 'git', 'push', '--tags' if cdt.has_remote?
           end
         end
-
       end
     end
   end
