@@ -57,7 +57,7 @@ module Capistrano
               raise 'Dirty git tree'
             end
 
-            required_tag_pattern = fetch(:require_tag)
+            required_tag_pattern = fetch(:require_tag, nil)
             unless required_tag_pattern.nil?
               unless cdt.has_matching_tag?(required_tag_pattern, 'HEAD')
                 logger.log Capistrano::Logger::IMPORTANT, "A tag matching '#{required_tag_pattern}' was not found in HEAD. Refusing to deploy."
